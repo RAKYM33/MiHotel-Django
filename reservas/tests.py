@@ -1,9 +1,10 @@
 from django.test import TestCase
 from django.core.exceptions import ValidationError
+from django.db import connection, IntegrityError, transaction
+from unittest import skipUnless
 from datetime import date
 from decimal import Decimal
 from .models import Habitacion, Reserva
-
 
 class ReservaTest(TestCase):
 
@@ -122,3 +123,105 @@ class SeguridadTest(TestCase):
         respuesta = self.client.post("/reservas/eliminar/1/")
 
         self.assertEqual(respuesta.status_code, 302)
+
+
+class DisponibilidadTest(TestCase):
+
+    def setUp(self):
+        self.habitacion = Habitacion.objects.create(
+            numero=101,
+            tipo="Doble",
+            precio=Decimal("85.00"),
+            disponible=True
+        )
+
+        self.reserva = Reserva.objects.create(
+            habitacion=self.habitacion,
+            cliente="Cliente original",
+            fecha_entrada=date(2027, 7, 3),
+            fecha_salida=date(2027, 7, 10)
+        )
+
+    def test_reservas_consecutivas(self):
+        reserva = Reserva(
+            habitacion=self.habitacion,
+            cliente="Cliente nuevo",
+            fecha_entrada=date(2027, 7, 10),
+            fecha_salida=date(2027, 7, 15)
+        )
+
+        reserva.full_clean()
+        reserva.save()
+
+        self.assertEqual(Reserva.objects.count(), 2)
+
+    def test_reservas_distintas_habitaciones(self):
+        otra_habitacion = Habitacion.objects.create(
+            numero=102,
+            tipo="Individual",
+            precio=Decimal("55.00")
+        )
+
+        reserva = Reserva(
+            habitacion=otra_habitacion,
+            cliente="Otro cliente",
+            fecha_entrada=date(2027, 7, 3),
+            fecha_salida=date(2027, 7, 10)
+        )
+
+        reserva.full_clean()
+        reserva.save()
+
+        self.assertEqual(Reserva.objects.count(), 2)
+
+    def test_editar_reserva_sin_conflicto(self):
+        self.reserva.fecha_salida = date(2027, 7, 12)
+        self.reserva.full_clean()
+        self.reserva.save()
+
+        self.assertEqual(self.reserva.noches, 9)
+
+    def test_editar_reserva_con_conflicto(self):
+        Reserva.objects.create(
+            habitacion=self.habitacion,
+            cliente="Segundo cliente",
+            fecha_entrada=date(2027, 7, 12),
+            fecha_salida=date(2027, 7, 15)
+        )
+
+        self.reserva.fecha_salida = date(2027, 7, 14)
+
+        with self.assertRaises(ValidationError):
+            self.reserva.full_clean()
+            
+
+class PostgreSQLTest(TestCase):
+
+    @skipUnless(
+        connection.vendor == "postgresql",
+        "Prueba exclusiva de PostgreSQL"
+    )
+    def test_proteccion_reservas_solapadas(self):
+        habitacion = Habitacion.objects.create(
+            numero=201,
+            tipo="Doble",
+            precio=Decimal("85.00")
+        )
+
+        Reserva.objects.create(
+            habitacion=habitacion,
+            cliente="Cliente A",
+            fecha_entrada=date(2027, 7, 1),
+            fecha_salida=date(2027, 7, 10)
+        )
+
+        with self.assertRaises(IntegrityError):
+            with transaction.atomic():
+                Reserva.objects.bulk_create([
+                    Reserva(
+                        habitacion=habitacion,
+                        cliente="Cliente B",
+                        fecha_entrada=date(2027, 7, 5),
+                        fecha_salida=date(2027, 7, 8)
+                    )
+                ])
