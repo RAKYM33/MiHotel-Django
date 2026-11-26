@@ -1,0 +1,66 @@
+{% extends "reservas/base.html" %}
+
+{% block titulo %}
+Inicio - MiHotel
+{% endblock %}
+
+{% block contenido %}
+
+<h1>Bienvenido a MiHotel</h1>
+<p>Sistema de gestión de habitaciones y reservas.</p>
+
+{% if exito %}
+<p style="color: green">¡Reserva creada correctamente!</p>
+{% endif %}
+
+<form method="GET">
+    <label>Fecha de entrada:</label>
+    <input type="date" name="entrada" value="{{ entrada }}" required />
+
+    <label>Fecha de salida:</label>
+    <input type="date" name="salida" value="{{ salida }}" required />
+
+    <button type="submit">Buscar habitaciones</button>
+</form>
+
+{% if error %}
+<p style="color: red">{{ error }}</p>
+{% else %}
+
+<h2>Habitaciones disponibles</h2>
+
+{% for habitacion in habitaciones %}
+<div class="habitacion">
+<h3>Habitación {{ habitacion.numero }}</h3>
+<p>Tipo: {{ habitacion.tipo }}</p>
+<p>Precio: {{ habitacion.precio }} €</p>
+<p style="color: green">Disponible</p>
+
+{% if entrada and salida %}
+<div class="habitacion"></div>
+
+<form method="POST">
+    {% csrf_token %}
+
+    <input type="hidden" name="habitacion" value="{{ habitacion.id }}" />
+    <input type="hidden" name="entrada" value="{{ entrada }}" />
+    <input type="hidden" name="salida" value="{{ salida }}" />
+
+    <label>Nombre del cliente:</label>
+    <input type="text" name="cliente" required />
+
+    <button type="submit">Reservar habitación</button>
+</form>
+
+{% endif %}
+</div>
+
+{% empty %}
+
+<p>No hay habitaciones disponibles para estas fechas.</p>
+
+{% endfor %}
+
+{% endif %}
+
+{% endblock %}

@@ -1,0 +1,24 @@
+{% extends "reservas/base.html" %}
+
+{% block titulo %}Eliminar reserva{% endblock %}
+
+{% block contenido %}
+
+<h1>Eliminar reserva</h1>
+
+<p>¿Estás seguro de que quieres eliminar esta reserva?</p>
+
+<p>Cliente: {{ reserva.cliente }}</p>
+<p>Habitación: {{ reserva.habitacion.numero }}</p>
+<p>Entrada: {{ reserva.fecha_entrada }}</p>
+<p>Salida: {{ reserva.fecha_salida }}</p>
+
+<form method="POST">
+    {% csrf_token %}
+
+    <button type="submit">Confirmar eliminación</button>
+
+    <a href="/reservas/">Cancelar</a>
+</form>
+
+{% endblock %}

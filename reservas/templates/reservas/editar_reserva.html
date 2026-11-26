@@ -1,0 +1,23 @@
+{% extends "reservas/base.html" %}
+
+{% block titulo %}
+Editar reserva - MiHotel
+{% endblock %}
+
+{% block contenido %}
+
+<h1>Editar reserva</h1>
+
+<p>Modifica los datos de la reserva.</p>
+
+<form method="POST">
+    {% csrf_token %}
+
+    {{ form.as_p }}
+
+    <button type="submit">Guardar cambios</button>
+
+    <a href="/reservas/">Cancelar</a>
+</form>
+
+{% endblock %}

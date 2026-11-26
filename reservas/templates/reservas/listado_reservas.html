@@ -1,0 +1,73 @@
+{% extends "reservas/base.html" %}
+
+{% block titulo %}
+Reservas - MiHotel
+{% endblock %}
+
+{% block contenido %}
+
+<h1>Listado de reservas</h1>
+<form method="GET">
+    <label>Cliente:</label>
+    <input type="text" name="buscar"
+           placeholder="Buscar cliente"
+           value="{{ buscar }}">
+
+    <label>Habitación:</label>
+    <input type="number" name="habitacion"
+           placeholder="Número de habitación"
+           value="{{ habitacion }}">
+
+    <button type="submit">Buscar</button>
+
+    <a href="/reservas/">Limpiar filtros</a>
+</form>
+<div class="estadisticas">
+    <div class="tarjeta">
+        <h3>Total reservas</h3>
+        <p>{{ total_reservas }}</p>
+    </div>
+
+    <div class="tarjeta">
+        <h3>Total noches</h3>
+        <p>{{ total_noches }}</p>
+    </div>
+
+    <div class="tarjeta">
+        <h3>Importe total</h3>
+        <p>{{ total_ingresos }} €</p>
+    </div>
+</div>
+
+<table>
+    <tr>
+        <th>Cliente</th>
+        <th>Habitación</th>
+        <th>Entrada</th>
+        <th>Salida</th>
+        <th>Noches</th>
+        <th>Precio total</th>
+        <th>Acciones</th>
+    </tr>
+
+    {% for reserva in reservas %}
+    <tr>
+        <td>{{ reserva.cliente }}</td>
+        <td>{{ reserva.habitacion.numero }}</td>
+        <td>{{ reserva.fecha_entrada }}</td>
+        <td>{{ reserva.fecha_salida }}</td>
+        <td>{{ reserva.noches }}</td>
+        <td>{{ reserva.precio_total }} €</td>
+        <td>
+            <a class="btn-editar" href="/reservas/editar/{{ reserva.id }}/">Editar</a>
+            <a class="btn-eliminar" href="/reservas/eliminar/{{ reserva.id }}/">Eliminar</a>
+        </td>
+    </tr>
+    {% empty %}
+    <tr>
+        <td colspan="7">No hay reservas.</td>
+    </tr>
+    {% endfor %}
+</table>
+
+{% endblock %}
