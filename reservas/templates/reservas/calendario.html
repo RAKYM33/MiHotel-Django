@@ -1,0 +1,208 @@
+{% extends "reservas/base.html" %}
+
+{% block titulo %}Calendario - MiHotel{% endblock %}
+
+{% block contenido %}
+
+<style>
+    .planning {
+        width: 100%;
+        overflow-x: auto;
+        margin-top: 25px;
+    }
+
+    .planning-cabecera {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 15px;
+        margin: 25px 0;
+    }
+
+    .planning-cabecera a {
+        background: #2563eb;
+        color: white;
+        padding: 10px 16px;
+        border-radius: 6px;
+        text-decoration: none;
+    }
+
+    .planning table {
+        border-collapse: collapse;
+        width: 100%;
+    }
+
+    .planning th,
+    .planning td {
+        border: 1px solid #d1d5db;
+        padding: 10px;
+        text-align: center;
+        min-width: 85px;
+    }
+
+    .planning th {
+        background: #1e293b;
+        color: white;
+    }
+
+    .planning .habitacion {
+        position: sticky;
+        left: 0;
+        background: #1e293b;
+        color: white;
+        min-width: 130px;
+        z-index: 1;
+    }
+
+    .planning .libre {
+        background: #dcfce7;
+        color: #166534;
+    }
+
+    .planning .ocupada {
+        background: #2563eb;
+        color: white;
+    }
+
+    .planning .ocupada a {
+        color: white;
+        text-decoration: none;
+        display: block;
+        font-size: 12px;
+    }
+
+    .planning .ocupada:hover {
+        background: #1d4ed8;
+    }
+
+    .planning .no-disponible {
+        background: #d1d5db;
+        color: #374151;
+    }
+
+    .planning .hoy {
+        background: #d97706;
+    }
+
+    .planning-leyenda {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 15px;
+        margin-top: 20px;
+    }
+
+    .planning-leyenda span {
+        padding: 8px 12px;
+        border-radius: 5px;
+        font-size: 14px;
+    }
+</style>
+
+<h1>Calendario de ocupación</h1>
+
+<p>Consulta la disponibilidad y las reservas del hotel.</p>
+
+<div class="planning-cabecera">
+
+    <a href="?mes={{ anterior.month }}&anio={{ anterior.year }}">
+        ← Anterior
+    </a>
+
+    <h2>{{ nombre_mes }} {{ anio }}</h2>
+
+    <a href="?mes={{ siguiente.month }}&anio={{ siguiente.year }}">
+        Siguiente →
+    </a>
+
+</div>
+
+<div class="planning">
+
+    <table>
+
+        <thead>
+            <tr>
+                <th class="habitacion">Habitación</th>
+
+                {% for dia in dias %}
+                    <th class="{% if dia == hoy %}hoy{% endif %}">
+                        {{ dia.day }}
+                    </th>
+                {% endfor %}
+            </tr>
+        </thead>
+
+        <tbody>
+
+            {% for fila in planning %}
+
+                <tr>
+
+                    <td class="habitacion">
+                        <strong>{{ fila.habitacion.numero }}</strong>
+                        <br>
+                        {{ fila.habitacion.tipo }}
+                    </td>
+
+                    {% for celda in fila.celdas %}
+
+                        {% if celda.reserva %}
+
+                            <td class="ocupada">
+                                <a href="/reservas/editar/{{ celda.reserva.id }}/"
+                                   title="{{ celda.reserva.cliente }}">
+                                    {{ celda.reserva.cliente|truncatechars:12 }}
+                                </a>
+                            </td>
+
+                        {% elif not fila.habitacion.disponible %}
+
+                            <td class="no-disponible">—</td>
+
+                        {% else %}
+
+                            <td class="libre">Libre</td>
+
+                        {% endif %}
+
+                    {% endfor %}
+
+                </tr>
+
+            {% empty %}
+
+                <tr>
+                    <td colspan="32">
+                        No hay habitaciones registradas.
+                    </td>
+                </tr>
+
+            {% endfor %}
+
+        </tbody>
+
+    </table>
+
+</div>
+
+<div class="planning-leyenda">
+
+    <span style="background: #dcfce7; color: #166534;">
+        Libre
+    </span>
+
+    <span style="background: #2563eb; color: white;">
+        Ocupada
+    </span>
+
+    <span style="background: #d1d5db; color: #374151;">
+        No disponible
+    </span>
+
+    <span style="background: #d97706; color: white;">
+        Día actual
+    </span>
+
+</div>
+
+{% endblock %}

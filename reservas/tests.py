@@ -225,3 +225,32 @@ class PostgreSQLTest(TestCase):
                         fecha_salida=date(2027, 7, 8)
                     )
                 ])
+class CalendarioTest(TestCase):
+
+    def setUp(self):
+        from django.contrib.auth.models import User
+
+        self.admin = User.objects.create_user(
+            username="admin_calendario",
+            password="test1234",
+            is_staff=True
+        )
+
+        self.usuario = User.objects.create_user(
+            username="cliente_calendario",
+            password="test1234"
+        )
+
+    def test_calendario_administrador(self):
+        self.client.force_login(self.admin)
+        respuesta = self.client.get("/calendario/")
+        self.assertEqual(respuesta.status_code, 200)
+
+    def test_calendario_cliente(self):
+        self.client.force_login(self.usuario)
+        respuesta = self.client.get("/calendario/")
+        self.assertEqual(respuesta.status_code, 302)
+
+    def test_calendario_sin_login(self):
+        respuesta = self.client.get("/calendario/")
+        self.assertEqual(respuesta.status_code, 302)                

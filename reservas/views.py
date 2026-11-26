@@ -2,7 +2,8 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.core.exceptions import ValidationError
 from django.db import transaction
 from .models import Habitacion, Reserva
-from datetime import date
+from datetime import date, timedelta
+from calendar import monthrange
 from .forms import ReservaForm
 from django.contrib.admin.views.decorators import staff_member_required
 
@@ -142,4 +143,86 @@ def editar_reserva(request, reserva_id):
     return render(request, "reservas/editar_reserva.html", {
         "form": form,
         "reserva": reserva
+    })
+
+@staff_member_required
+def calendario(request):
+    hoy = date.today()
+
+    try:
+        anio = int(request.GET.get("anio", hoy.year))
+        mes = int(request.GET.get("mes", hoy.month))
+        primer_dia = date(anio, mes, 1)
+    except (ValueError, OverflowError):
+        anio = hoy.year
+        mes = hoy.month
+        primer_dia = date(anio, mes, 1)
+
+    if anio < 2 or anio > 9998:
+        anio = hoy.year
+        mes = hoy.month
+        primer_dia = date(anio, mes, 1)
+
+    numero_dias = monthrange(anio, mes)[1]
+    ultimo_dia = date(anio, mes, numero_dias)
+    fin_periodo = ultimo_dia + timedelta(days=1)
+
+    dias = [
+        primer_dia + timedelta(days=i)
+        for i in range(numero_dias)
+    ]
+
+    habitaciones = Habitacion.objects.all().order_by("numero")
+
+    reservas = Reserva.objects.filter(
+        fecha_entrada__lt=fin_periodo,
+        fecha_salida__gt=primer_dia
+    ).select_related("habitacion")
+
+    ocupacion = {}
+
+    for reserva in reservas:
+        dia = max(reserva.fecha_entrada, primer_dia)
+        fin = min(reserva.fecha_salida, fin_periodo)
+
+        while dia < fin:
+            ocupacion[(reserva.habitacion_id, dia)] = reserva
+            dia += timedelta(days=1)
+
+    planning = []
+
+    for habitacion in habitaciones:
+        celdas = []
+
+        for dia in dias:
+            reserva = ocupacion.get((habitacion.id, dia))
+
+            celdas.append({
+                "dia": dia,
+                "reserva": reserva
+            })
+
+        planning.append({
+            "habitacion": habitacion,
+            "celdas": celdas
+        })
+
+    anterior = primer_dia - timedelta(days=1)
+    siguiente = fin_periodo
+
+    meses = [
+        "Enero", "Febrero", "Marzo", "Abril",
+        "Mayo", "Junio", "Julio", "Agosto",
+        "Septiembre", "Octubre", "Noviembre", "Diciembre"
+    ]
+
+    return render(request, "reservas/calendario.html", {
+        "planning": planning,
+        "dias": dias,
+        "mes": mes,
+        "anio": anio,
+        "nombre_mes": meses[mes - 1],
+        "anterior": anterior,
+        "siguiente": siguiente,
+        "hoy": hoy
     })

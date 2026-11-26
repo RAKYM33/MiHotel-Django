@@ -1,6 +1,12 @@
 from django.contrib import admin
 from django.urls import path
-from reservas.views import inicio, listado_reservas, eliminar_reserva, editar_reserva
+from reservas.views import (
+    inicio,
+    listado_reservas,
+    eliminar_reserva,
+    editar_reserva,
+    calendario
+)
 
 urlpatterns = [
     path("admin/", admin.site.urls),
@@ -8,4 +14,5 @@ urlpatterns = [
     path("reservas/", listado_reservas),
     path("reservas/eliminar/<int:reserva_id>/", eliminar_reserva),
     path("reservas/editar/<int:reserva_id>/", editar_reserva),
+    path("calendario/", calendario, name="calendario"),
 ]
