@@ -1,9 +1,12 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.core.exceptions import ValidationError
+from django.db import transaction
 from .models import Habitacion, Reserva
 from datetime import date
 from .forms import ReservaForm
 from django.contrib.admin.views.decorators import staff_member_required
+
+
 def inicio(request):
     habitaciones = Habitacion.objects.filter(disponible=True)
 
@@ -18,20 +21,21 @@ def inicio(request):
         habitacion_id = request.POST.get("habitacion")
 
         try:
-            habitacion = Habitacion.objects.get(
-                id=habitacion_id,
-                disponible=True
-            )
+            with transaction.atomic():
+                habitacion = Habitacion.objects.select_for_update().get(
+                    id=habitacion_id,
+                    disponible=True
+                )
 
-            reserva = Reserva(
-                habitacion=habitacion,
-                cliente=cliente,
-                fecha_entrada=date.fromisoformat(entrada),
-                fecha_salida=date.fromisoformat(salida)
-            )
+                reserva = Reserva(
+                    habitacion=habitacion,
+                    cliente=cliente,
+                    fecha_entrada=date.fromisoformat(entrada),
+                    fecha_salida=date.fromisoformat(salida)
+                )
 
-            reserva.full_clean()
-            reserva.save()
+                reserva.full_clean()
+                reserva.save()
 
             return redirect(request.path + "?exito=1")
 
@@ -77,6 +81,7 @@ def inicio(request):
         "exito": request.GET.get("exito")
     })
 
+
 @staff_member_required
 def listado_reservas(request):
     reservas = Reserva.objects.all().order_by("fecha_entrada")
@@ -105,6 +110,8 @@ def listado_reservas(request):
         "buscar": buscar,
         "habitacion": habitacion
     })
+
+
 @staff_member_required
 def eliminar_reserva(request, reserva_id):
     reserva = get_object_or_404(Reserva, id=reserva_id)
@@ -116,6 +123,7 @@ def eliminar_reserva(request, reserva_id):
     return render(request, "reservas/eliminar_reserva.html", {
         "reserva": reserva
     })
+
 
 @staff_member_required
 def editar_reserva(request, reserva_id):
